@@ -42,3 +42,6 @@ This project is a Django-based Two-Factor Authentication (2FA) system that adds 
    </table>
 
 </details>
+
+## License
+Licensed under the [MIT License](LICENSE).
