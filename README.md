@@ -25,6 +25,7 @@ This project is a Django-based Two-Factor Authentication (2FA) system that adds 
 
 | Failure |
 |-|
-| ![](https://github.com/multiverseweb/2FA/blob/main/images/fail.png?raw=true) |
+| ![](https://github.com/multiverseweb/2FA/blob/main/images/fail1.png?raw=true) | ![](https://github.com/multiverseweb/2FA/blob/main/images/fail2.png?raw=true) |
+
 
 </details>
