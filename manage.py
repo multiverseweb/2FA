@@ -22,5 +22,5 @@ if __name__ == '__main__':
     main()
 
 
-# python project_2FA/manage.py runserver
-# python project_2FA/manage.py makemigrations
+# python manage.py runserver
+# python manage.py makemigrations
