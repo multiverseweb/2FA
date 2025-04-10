@@ -1,0 +1,122 @@
+*{
+    margin:0;
+    padding:0;
+}
+body {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    background-color: #000000;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    color: white;
+    opacity: 0;
+    animation: fadeIn 0.5s linear forwards;
+  }
+
+  @keyframes fadeIn{
+    0%{
+        opacity: 0;
+    }
+    100%{
+        opacity: 1;
+    }
+  }
+  h2 {
+    color: #ffffff;
+    margin-top: 80px;
+    font-weight: 300;
+  }
+
+  form {
+    width: 40%;
+    background-color: rgba(0, 0, 0, 0);
+    padding: 20px;
+    padding-top: 0px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+  }
+
+  input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    display: block;
+    margin: 10px 0;
+    background-image: linear-gradient(to right,#1f1f1f, #0d0d0d, #1f1f1f);
+    border: none;
+    border-radius: 5px;
+    color: white;
+  }
+
+  button {
+    width: 40%;
+    min-width: max-content;
+    padding: 10px;
+    background-color: #3b3b3b;
+    color: white;
+    border: none;
+    font-size: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition-duration: 0.3s;
+    margin-top: 20px;
+  }
+
+  button:hover {
+    background-color: #e4e4e4;
+    color: black;
+  }
+
+  a{
+    color:aqua;
+  }
+
+  footer {
+    background-color: #000000;
+    position: fixed;
+    bottom: 0;
+    font-size: small;
+    width: calc(80% - 20px);
+    margin-left: 10%;
+    color: rgb(164, 164, 164);
+    padding: 10px;
+    text-align: center;
+  }
+
+  ul {
+    color: gold;
+    font-size: 15px;
+    list-style: square;
+    text-align: left;
+  }
+
+
+  label {
+    color: rgba(255, 255, 255, 0.729);
+    margin-top: 7px;
+    width: 100%;
+    display: block;
+    text-align: left;
+    font-size: small;
+  }
+
+  .helptext {
+    display: none;
+  }
+
+  .last {
+    margin-bottom: 100px;
+  }
+  .errorlist {
+    color: red;
+    list-style: none;
+  }
+hr{
+    width: 100%;
+    margin-bottom: 20px;
+    border: 1px solid rgba(128, 128, 128, 0.362);
+}
+  @media screen and (max-width: 620px) {
+    form {
+      width: 90vw;
+    }
+  }

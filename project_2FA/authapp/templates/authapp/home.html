@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>2FA | Home</title>
+    <link rel="stylesheet" href="{% static 'styles/style.css' %}">
+    <script>
+        setTimeout(() => {
+            window.location.href = "https://multiverse-dataverse.netlify.app/";
+        }, 3000); // 3000ms = 3 seconds
+    </script>
+</head>
+
+<body>
+    <h2>Welcome, {{ user.username }}!</h2>
+    <br>
+    <p>You have successfully logged in using 2FA.</p>
+    <footer>
+        <hr>
+        <p>&copy; Tejas Gupta 2025. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

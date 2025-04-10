@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>2FA | Register</title>
+    <link rel="stylesheet" href="{% static 'styles/style.css' %}">
+</head>
+
+<body>
+    <h2>Register yourself for 2 Factor Authentication</h2>
+    <br>
+    <form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Register</button></form>
+    <br>Already registered? <a href="/login/">Login.</a>
+    <footer>
+        <hr>
+        <p>&copy; Tejas Gupta 2025. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

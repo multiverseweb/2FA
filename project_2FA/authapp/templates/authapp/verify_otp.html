@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>2FA | Verify OTP</title>
+    <link rel="stylesheet" href="{% static 'styles/style.css' %}">
+</head>
+
+<body>
+    <h2>Verify OTP</h2>
+    <br>
+    {% if messages %}{% for message in messages %}<p>{{ message }}</p>{% endfor %}{% endif %}
+    <form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">Verify</button></form>
+    <footer>
+        <hr>
+        <p>&copy; Tejas Gupta 2025. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>
