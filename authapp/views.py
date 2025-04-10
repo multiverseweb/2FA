@@ -13,6 +13,9 @@ from .models import CustomUser
 lockout_dict = {}
 otp_secrets = {}
 
+def default_view(request):
+    return redirect('register')
+
 
 def register_view(request):
     if request.method == 'POST':
