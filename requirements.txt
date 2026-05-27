@@ -1,6 +1,5 @@
-decouple==0.0.7
 Django==5.1.4
-python-decouple==3.8
 pyotp==2.6.0
 gunicorn
 whitenoise==6.8.2
+django-cors-headers==4.6.0

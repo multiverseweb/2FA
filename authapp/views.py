@@ -1,108 +1,162 @@
-import pyotp
+import json
 import time
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
-from django.utils import timezone
+from collections import defaultdict
+
+import pyotp
 from django.conf import settings
-from django.contrib import messages
-from .forms import RegisterForm, LoginForm, OTPForm
-from .models import CustomUser
+from django.core.mail import send_mail
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
-lockout_dict = {}
-otp_secrets = {}
+from .models import OTPSession
 
-def default_view(request):
-    return redirect('register')
+# ---------------------------------------------------------------------------
+# Rate limiting (in-memory) — max 5 OTP requests per email per 5 minutes
+# ---------------------------------------------------------------------------
+_rate_limit = defaultdict(list)  # email -> [timestamp, ...]
+RATE_LIMIT_WINDOW = 300  # seconds
+RATE_LIMIT_MAX = 5
 
 
-def register_view(request):
-    if request.method == 'POST':
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('login')
+def _is_rate_limited(email: str) -> bool:
+    """Check if an email has exceeded the OTP request rate limit."""
+    now = time.time()
+    # Prune old entries
+    _rate_limit[email] = [t for t in _rate_limit[email] if now - t < RATE_LIMIT_WINDOW]
+    if len(_rate_limit[email]) >= RATE_LIMIT_MAX:
+        return True
+    _rate_limit[email].append(now)
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Landing page
+# ---------------------------------------------------------------------------
+def landing_page(request):
+    """Render the marketing / landing page where developers copy the script tag."""
+    return render(request, 'authapp/landing.html')
+
+
+# ---------------------------------------------------------------------------
+# API: Send OTP
+# ---------------------------------------------------------------------------
+@csrf_exempt
+@require_POST
+def send_otp(request):
+    """Generate a TOTP and email it to the user.
+
+    Expects JSON body: {"email": "user@example.com"}
+    Returns JSON:      {"token": "<session-token>", "message": "OTP sent"}
+    """
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    email = data.get('email', '').strip().lower()
+    if not email or '@' not in email:
+        return JsonResponse({'error': 'A valid email address is required.'}, status=400)
+
+    # Rate-limit check
+    if _is_rate_limited(email):
+        return JsonResponse(
+            {'error': 'Too many OTP requests. Please wait a few minutes and try again.'},
+            status=429,
+        )
+
+    # Generate TOTP
+    secret = pyotp.random_base32()
+    totp = pyotp.TOTP(secret, interval=30)
+    otp_code = totp.now()
+
+    # Create session
+    token = OTPSession.generate_token()
+    OTPSession.objects.create(email=email, secret=secret, token=token)
+
+    # Send email
+    try:
+        send_mail(
+            subject='🔐 Your Verification Code',
+            message=(
+                f'Your one-time verification code is: {otp_code}\n\n'
+                f'This code is valid for 30 seconds.\n\n'
+                f'If you did not request this, please ignore this email.'
+            ),
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        return JsonResponse(
+            {'error': 'Failed to send OTP email. Please try again later.'},
+            status=500,
+        )
+
+    return JsonResponse({'token': token, 'message': 'OTP sent successfully.'})
+
+
+# ---------------------------------------------------------------------------
+# API: Verify OTP
+# ---------------------------------------------------------------------------
+@csrf_exempt
+@require_POST
+def verify_otp(request):
+    """Verify the OTP provided by the user.
+
+    Expects JSON body: {"email": "user@example.com", "otp": "123456", "token": "<session-token>"}
+    Returns JSON:      {"verified": true} or {"error": "..."}
+    """
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON body.'}, status=400)
+
+    email = data.get('email', '').strip().lower()
+    otp_code = data.get('otp', '').strip()
+    token = data.get('token', '').strip()
+
+    if not all([email, otp_code, token]):
+        return JsonResponse({'error': 'email, otp, and token are all required.'}, status=400)
+
+    # Look up session
+    try:
+        session = OTPSession.objects.get(token=token, email=email)
+    except OTPSession.DoesNotExist:
+        return JsonResponse({'error': 'Invalid session. Please request a new OTP.'}, status=400)
+
+    # Already verified
+    if session.verified:
+        return JsonResponse({'verified': True, 'message': 'Already verified.'})
+
+    # Check if session is expired (max 2 minutes to allow for slight delays)
+    age = (timezone.now() - session.created_at).total_seconds()
+    if age > 120:
+        return JsonResponse(
+            {'error': 'Session expired. Please request a new OTP.'},
+            status=400,
+        )
+
+    # Max attempts
+    if session.attempts >= 5:
+        return JsonResponse(
+            {'error': 'Too many failed attempts. Please request a new OTP.'},
+            status=400,
+        )
+
+    # Verify TOTP
+    totp = pyotp.TOTP(session.secret, interval=30)
+    if totp.verify(otp_code, valid_window=1):
+        session.verified = True
+        session.save()
+        return JsonResponse({'verified': True, 'message': 'Verification successful.'})
     else:
-        form = RegisterForm()
-    return render(request, 'authapp/register.html', {'form': form})
-
-
-def login_view(request):
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-
-            if email in lockout_dict and timezone.now() < lockout_dict[email]:
-                messages.error(request, 'System locked due to multiple failed attempts. Try again later.')
-                return redirect('login')
-
-            try:
-                user = CustomUser.objects.get(email=email)
-            except CustomUser.DoesNotExist:
-                messages.error(request, 'User does not exist.')
-                return redirect('login')
-
-            auth_user = authenticate(username=user.username, password=password)
-            if auth_user:
-                secret = pyotp.random_base32()
-                otp_secrets[email] = (secret, timezone.now())
-                totp = pyotp.TOTP(secret, interval=30)
-                otp = totp.now()
-                send_mail(
-                    'Your 2FA OTP Code',
-                    f'Your OTP is {otp}. It is valid for 30 seconds.',
-                    settings.EMAIL_HOST_USER,
-                    [email]
-                )
-                request.session['email'] = email
-                request.session['username'] = user.username
-                request.session['login_valid'] = True
-                print("Redirecting to OTP...")
-                return redirect('verify_otp')
-            else:
-                messages.error(request, 'Invalid credentials.')
-    else:
-        form = LoginForm()
-    return render(request, 'authapp/login.html', {'form': form})
-
-
-def verify_otp_view(request):
-    email = request.session.get('email')
-    if not email:
-        return redirect('login')
-
-    if request.method == 'POST':
-        form = OTPForm(request.POST)
-        if form.is_valid():
-            entered_otp = form.cleaned_data['otp']
-            otp_data = otp_secrets.get(email)
-
-            if otp_data is None:
-                messages.error(request, 'OTP expired or invalid session. Please login again.')
-                return redirect('login')
-
-            secret, timestamp = otp_data
-            totp = pyotp.TOTP(secret, interval=30)
-
-            if totp.verify(entered_otp, valid_window=1):
-                user = CustomUser.objects.get(email=email)
-                login(request, user)
-                messages.success(request, 'Login successful!')
-                return redirect('home')
-            else:
-                lockout_dict[email] = timezone.now() + timezone.timedelta(minutes=2)
-                messages.error(request, 'Incorrect OTP. You are locked out for 2 minutes.')
-                return redirect('login')
-    else:
-        form = OTPForm()
-
-    return render(request, 'authapp/verify_otp.html', {'form': form})
-
-
-
-@login_required
-def home_view(request):
-    return render(request, 'authapp/home.html')
+        session.attempts += 1
+        session.save()
+        remaining = 5 - session.attempts
+        return JsonResponse(
+            {'error': f'Invalid OTP. {remaining} attempt(s) remaining.'},
+            status=400,
+        )

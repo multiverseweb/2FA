@@ -1,213 +1,251 @@
 <div align="center">
 
-# 🔐 Secondary Authentication Server (2FA)
+# 🛡️ 2FA Guard
 
-A production-ready **Django-based Two-Factor Authentication** system that adds an extra layer of security to any application. Powered by **time-sensitive email OTPs** with built-in brute-force protection.
+**Email OTP Verification as a Service**
+
+Add email OTP verification to **any website** with a single `<script>` tag.
+No signup, no API keys, no backend configuration required.
 
 [![Visitors](https://api.visitorbadge.io/api/visitors?path=multiverseweb2%22FA%20&countColor=%23263759&style=flat&initial=5767)](https://github.com/multiverseweb/2FA)
 ![License](https://img.shields.io/badge/License-MIT-4e3eb5)
 ![Languages](https://img.shields.io/github/languages/count/multiverseweb/2FA?color=20B2AA)
 ![GitHub Repo stars](https://img.shields.io/github/stars/multiverseweb/2FA)
 ![GitHub last commit](https://img.shields.io/github/last-commit/multiverseweb/2FA)
-![GitHub repo size](https://img.shields.io/github/repo-size/multiverseweb/2FA)
-![GitHub total lines](https://sloc.xyz/github/multiverseweb/2FA)
-<a href="https://2fa.up.railway.app/"><img alt="Website" src="https://img.shields.io/website?url=https%3A%2F%2F2fa.up.railway.app/%2F&up_message=awake&up_color=%2300d18f&down_message=asleep&down_color=red&style=flat"></a>
 
 </div>
 
 ---
 
+## 🚀 Quick Start
+
+Add this single line to any HTML page to protect it with email OTP verification:
+
+```html
+<script src="https://YOUR-DOMAIN/static/js/2fa-guard.js"></script>
+```
+
+That's it. When visitors open the page, they'll see a verification overlay asking for their email. They receive a 6-digit OTP valid for 30 seconds. Only after entering the correct code can they access your page.
+
+---
+
 ## 📋 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Snapshots](#-snapshots)
-- [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Run Locally](#run-locally)
-- [Deployment](#-deployment)
+- [How It Works](#-how-it-works)
+- [Features](#-features)
+- [Integration Guide](#-integration-guide)
+- [API Reference](#-api-reference)
+- [Self-Hosting](#-self-hosting)
+  - [Local Development](#local-development)
   - [Deploy to Railway](#deploy-to-railway)
   - [Deploy with Docker](#deploy-with-docker)
-- [API Routes](#-api-routes)
+- [Architecture](#-architecture)
 - [Project Structure](#-project-structure)
-- [How It Works](#-how-it-works)
-- [Security Measures](#-security-measures)
+- [Security](#-security)
 - [Contributing](#-contributing)
 - [License](#-license)
 
 ---
 
-## 🌟 Overview
-
-This project implements a robust **Two-Factor Authentication (2FA)** server using Django. When a user logs in with their credentials, the system generates a **time-based OTP** (One-Time Password) and delivers it to the user's registered email. The OTP is valid for only **30 seconds**, ensuring strong time-sensitive verification. If incorrect OTPs are entered, the system enforces a **2-minute lockout** to mitigate brute-force attacks.
-
-> **Live Demo:** [https://2fa.up.railway.app/](https://2fa.up.railway.app/)
-
----
-
-## ✨ Key Features
-
-| Feature | Description |
-|---|---|
-| 🔑 **Email-Based OTP** | Sends a one-time password to the user's registered email upon login |
-| ⏱️ **30-Second Expiry** | OTPs are time-sensitive and expire after 30 seconds using TOTP |
-| 🚫 **Brute-Force Protection** | Locks out users for 2 minutes after incorrect OTP attempts |
-| 👤 **Custom User Model** | Extends Django's `AbstractUser` for flexible user management |
-| 📧 **SMTP Email Delivery** | Uses Gmail SMTP for reliable OTP delivery |
-| 🐳 **Docker Ready** | Includes `Dockerfile` and `.dockerignore` for containerized deployment |
-| 🚂 **Railway Deployment** | Pre-configured `Procfile` for one-click Railway deployment |
-| 📱 **Responsive UI** | Mobile-friendly dark-themed interface with smooth animations |
-| 🔒 **CSRF Protection** | Built-in Django CSRF middleware for form security |
-| 🎨 **Animated Interface** | Fade-in animations and hover effects for a polished UX |
-
----
-
-## 🛠️ Tech Stack
-
-![HTML5](https://img.shields.io/badge/HTML5-E34F26.svg?style=for-the-badge&logo=HTML5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6.svg?style=for-the-badge&logo=CSS3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E.svg?style=for-the-badge&logo=JavaScript&logoColor=black)
-![Python](https://img.shields.io/badge/Python-3776AB.svg?style=for-the-badge&logo=Python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-092E20.svg?style=for-the-badge&logo=Django&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57.svg?style=for-the-badge&logo=SQLite&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED.svg?style=for-the-badge&logo=Docker&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E.svg?style=for-the-badge&logo=Railway&logoColor=white)
-
----
-
-## 🏗️ Architecture
+## ⚙️ How It Works
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant D as Django Server
+    participant V as Visitor
+    participant W as Your Website
+    participant S as 2FA Guard Service
     participant E as Email (SMTP)
 
-    U->>D: POST /register/ (username, email, password)
-    D-->>U: Redirect to /login/
-
-    U->>D: POST /login/ (email, password)
-    D->>D: Authenticate credentials
-    D->>D: Generate TOTP secret & OTP
-    D->>E: Send OTP via email
-    E-->>U: 📧 OTP received
-    D-->>U: Redirect to /verify-otp/
-
-    U->>D: POST /verify-otp/ (otp)
+    V->>W: Opens your website
+    W->>W: Script hides page, shows OTP overlay
+    V->>S: Enters email → POST /api/send-otp/
+    S->>S: Generates TOTP (30s validity)
+    S->>E: Sends OTP via email
+    E-->>V: 📧 OTP received
+    V->>S: Enters OTP → POST /api/verify-otp/
     alt OTP Valid (within 30s)
-        D-->>U: ✅ Redirect to /home/
+        S-->>V: ✅ Verified
+        W->>W: Overlay removed, page revealed
     else OTP Invalid
-        D->>D: Lock user for 2 minutes
-        D-->>U: ❌ Redirect to /login/
+        S-->>V: ❌ Error
+        W->>W: Error shown, stays on overlay
     end
 ```
 
+1. **Script loads** → Immediately hides the page content and shows a verification overlay
+2. **Email entered** → A 6-digit OTP is sent to the email address
+3. **OTP verified** → Overlay disappears, original page content is revealed
+4. **OTP wrong** → Error message shown, user can retry or request a new code
+5. **Session stored** → Verification is saved in `sessionStorage` (lasts until tab is closed)
+
 ---
 
-## 📸 Snapshots
+## ✨ Features
 
-| Account Registration |
-|---|
-| ![Registration Page](https://github.com/multiverseweb/2FA/blob/main/images/register.png?raw=true) |
-
-<details>
-<summary><b>🖼️ View More Screenshots</b></summary>
-
-| Account Login |
-|---|
-| ![Login Page](https://github.com/multiverseweb/2FA/blob/main/images/login.png?raw=true) |
-
-| OTP Verification |
-|---|
-| ![OTP Verification](https://github.com/multiverseweb/2FA/blob/main/images/verify.png?raw=true) |
-
-| Correct OTP Entered |
-|---|
-| ![Home Page](https://github.com/multiverseweb/2FA/blob/main/images/home.png?raw=true) |
-
-| Incorrect OTP (1st Attempt) | Incorrect OTP (2nd Attempt — Lockout) |
+| Feature | Description |
 |---|---|
-| ![Fail 1](https://github.com/multiverseweb/2FA/blob/main/images/fail1.png?raw=true) | ![Fail 2](https://github.com/multiverseweb/2FA/blob/main/images/fail2.png?raw=true) |
-
-</details>
+| 📝 **One-Line Integration** | Single `<script>` tag — no npm, no build tools, no config |
+| ⏱️ **30-Second OTP** | Time-based OTP using the TOTP standard (RFC 6238) |
+| 🔒 **Brute-Force Protection** | Max 5 attempts per session, rate limiting on OTP requests |
+| 🎨 **Premium UI** | Dark glassmorphism overlay with smooth animations |
+| 📱 **Fully Responsive** | Works on desktop, tablet, and mobile |
+| 🌐 **Universal Compatibility** | Works with any website — static HTML, React, Vue, WordPress, etc. |
+| 🔑 **No Registration Required** | Visitors only need an email — no accounts, no passwords |
+| ♻️ **Session Persistence** | Verified users aren't asked again within the same browser session |
+| 📧 **Gmail SMTP** | Reliable email delivery via Gmail App Passwords |
+| 🐳 **Docker Ready** | Dockerfile included for containerized deployment |
+| 🚂 **Railway Ready** | Pre-configured Procfile for one-click Railway deployment |
 
 ---
 
-## 🚀 Getting Started
+## 📦 Integration Guide
+
+### Basic Usage
+
+Add the script tag to any HTML page:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Protected Page</title>
+
+  <!-- Add this one line to protect your page -->
+  <script src="https://YOUR-DOMAIN/static/js/2fa-guard.js"></script>
+</head>
+<body>
+  <h1>Secret Content</h1>
+  <p>This content is only visible after email verification.</p>
+</body>
+</html>
+```
+
+### How the Overlay Works
+
+- The script **automatically hides your page** and shows a full-screen verification overlay
+- The user **cannot access or see any page content** until they verify their email
+- After successful verification, the overlay fades out and the original page appears
+- Verification is stored in `sessionStorage` — refreshing the page doesn't re-trigger verification
+- Opening a new tab/window **will** require re-verification
+
+### No Configuration Needed
+
+The script automatically detects the 2FA Guard service URL from its own `src` attribute. No API keys, no initialization code, no additional configuration.
+
+---
+
+## 🗺️ API Reference
+
+For custom integration, you can use the REST API directly.
+
+### Send OTP
+
+```
+POST /api/send-otp/
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "token": "session-token-string",
+  "message": "OTP sent successfully."
+}
+```
+
+**Error Responses:**
+- `400` — Invalid email
+- `429` — Rate limited (max 5 requests per email per 5 minutes)
+- `500` — Email delivery failure
+
+### Verify OTP
+
+```
+POST /api/verify-otp/
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "otp": "123456",
+  "token": "session-token-string"
+}
+```
+
+**Response (200):**
+```json
+{
+  "verified": true,
+  "message": "Verification successful."
+}
+```
+
+**Error Responses:**
+- `400` — Invalid OTP, expired session, or too many attempts
+
+---
+
+## 🏠 Self-Hosting
 
 ### Prerequisites
 
 - **Python** 3.10+
 - **pip** (Python package manager)
 - **Git**
-- A **Gmail account** with [App Passwords](https://myaccount.google.com/apppasswords) enabled (for SMTP)
+- A **Gmail account** with [App Passwords](https://myaccount.google.com/apppasswords) enabled
 
-### Installation
+### Local Development
 
 ```bash
 # Clone the repository
 git clone https://github.com/multiverseweb/2FA.git
 cd 2FA
 
-# Create a virtual environment
+# Create and activate virtual environment
 python -m venv venv
-
-# Activate it
-# On Windows:
+# Windows:
 venv\Scripts\activate
-# On macOS/Linux:
+# macOS/Linux:
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Set environment variables
+# Windows PowerShell:
+$env:EMAIL_USER="your-email@gmail.com"
+$env:EMAIL_PASS="your-gmail-app-password"
+# macOS/Linux:
+export EMAIL_USER=your-email@gmail.com
+export EMAIL_PASS=your-gmail-app-password
+
+# Run migrations
+python manage.py migrate
+
+# Start the server
+python manage.py runserver
 ```
 
-### Environment Variables
-
-Create a `.env` file in the project root (or set these as system environment variables):
-
-```env
-# Email configuration (required for OTP delivery)
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-gmail-app-password
-
-# Django configuration (optional for local dev)
-DJANGO_ALLOWED_HOSTS=127.0.0.1 localhost
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-```
+Open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)** to see the landing page.
 
 > [!IMPORTANT]
 > You must use a **Gmail App Password**, not your regular Gmail password. Generate one at [Google App Passwords](https://myaccount.google.com/apppasswords).
 
-### Run Locally
-
-```bash
-# Apply database migrations
-python manage.py migrate
-
-# Start the development server
-python manage.py runserver
-```
-
-Open your browser and navigate to **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)**
-
----
-
-## 🌐 Deployment
-
 ### Deploy to Railway
-
-This project is pre-configured for **Railway** deployment:
 
 1. **Fork** this repository
 2. Go to [railway.app](https://railway.app/) and create a new project
 3. Select **"Deploy from GitHub repo"** and connect your fork
-4. Add the following **environment variables** in Railway's dashboard:
+4. Add the following **environment variables**:
 
    | Variable | Value |
    |---|---|
@@ -218,10 +256,10 @@ This project is pre-configured for **Railway** deployment:
    | `SECRET_KEY` | A strong random secret key |
    | `DEBUG` | `False` |
 
-5. Railway will automatically detect the `Procfile` and deploy using **Gunicorn**
+5. Railway will automatically detect the `Procfile` and deploy
 
 > [!TIP]
-> Generate a secure `SECRET_KEY` with:
+> Generate a secure `SECRET_KEY`:
 > ```bash
 > python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 > ```
@@ -229,8 +267,8 @@ This project is pre-configured for **Railway** deployment:
 ### Deploy with Docker
 
 ```bash
-# Build the Docker image
-docker build -t 2fa-server .
+# Build the image
+docker build -t 2fa-guard .
 
 # Run the container
 docker run -p 8000:8000 \
@@ -238,21 +276,33 @@ docker run -p 8000:8000 \
   -e EMAIL_PASS=your-app-password \
   -e DJANGO_ALLOWED_HOSTS="localhost 127.0.0.1" \
   -e SECRET_KEY=your-secret-key \
-  2fa-server
+  2fa-guard
 ```
 
 ---
 
-## 🗺️ API Routes
+## 🏗️ Architecture
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `GET/POST` | `/` | Redirects to `/register/` | ❌ |
-| `GET/POST` | `/register/` | User registration page | ❌ |
-| `GET/POST` | `/login/` | User login page (sends OTP on success) | ❌ |
-| `GET/POST` | `/verify-otp/` | OTP verification page | ❌ (session-based) |
-| `GET` | `/home/` | Authenticated home page | ✅ |
-| `GET` | `/admin/` | Django admin panel | ✅ (staff) |
+```mermaid
+flowchart TD
+    A["Developer adds &lt;script&gt; tag"] --> B["Visitor opens the website"]
+    B --> C["Script hides page body"]
+    C --> D["Shows verification overlay"]
+    D --> E["Visitor enters email"]
+    E --> F["POST /api/send-otp/"]
+    F --> G["Server generates TOTP"]
+    G --> H["OTP emailed via SMTP"]
+    H --> I["Visitor enters OTP"]
+    I --> J["POST /api/verify-otp/"]
+    J --> K{OTP valid?}
+    K -- Yes --> L["✅ Overlay removed"]
+    L --> M["Page content revealed"]
+    K -- No --> N["❌ Error shown"]
+    N --> I
+
+    style L fill:#00d18f,stroke:#00a070,color:#000
+    style N fill:#ff4444,stroke:#cc0000,color:#fff
+```
 
 ---
 
@@ -260,85 +310,54 @@ docker run -p 8000:8000 \
 
 ```
 2FA/
-├── authapp/                    # Main authentication app
-│   ├── templates/authapp/      # HTML templates
-│   │   ├── home.html           # Post-login success page
-│   │   ├── login.html          # Login form
-│   │   ├── register.html       # Registration form
-│   │   └── verify_otp.html     # OTP input form
-│   ├── admin.py                # Admin site registration
-│   ├── apps.py                 # App configuration
-│   ├── forms.py                # Django forms (Register, Login, OTP)
-│   ├── models.py               # CustomUser model (extends AbstractUser)
-│   ├── urls.py                 # App URL routing
-│   └── views.py                # View logic (register, login, OTP, home)
-├── project_2FA/                # Django project configuration
-│   ├── settings.py             # Project settings (DB, email, static files)
-│   ├── urls.py                 # Root URL configuration
-│   ├── wsgi.py                 # WSGI entry point
-│   └── asgi.py                 # ASGI entry point
-├── static/styles/
-│   └── style.css               # Global stylesheet (dark theme)
-├── images/                     # Screenshot assets for README
-├── .dockerignore               # Docker ignore rules
-├── .gitignore                  # Git ignore rules
-├── Dockerfile                  # Docker container configuration
-├── LICENSE                     # MIT License
-├── Procfile                    # Railway/Heroku process file
-├── manage.py                   # Django management script
-├── requirements.txt            # Python dependencies
-└── README.md                   # This file
+├── authapp/                      # Core application
+│   ├── templates/authapp/
+│   │   └── landing.html          # Marketing / landing page
+│   ├── admin.py                  # OTPSession admin registration
+│   ├── apps.py                   # App configuration
+│   ├── models.py                 # OTPSession model
+│   ├── urls.py                   # API route definitions
+│   └── views.py                  # API views (send-otp, verify-otp)
+├── project_2FA/                  # Django project settings
+│   ├── settings.py               # Settings (CORS, email, static)
+│   ├── urls.py                   # Root URL configuration
+│   ├── wsgi.py                   # WSGI entry point
+│   └── asgi.py                   # ASGI entry point
+├── static/
+│   ├── js/
+│   │   └── 2fa-guard.js          # ⭐ The guard script (core product)
+│   └── styles/
+│       └── style.css             # Landing page styles
+├── .dockerignore
+├── .gitignore
+├── Dockerfile                    # Docker container config
+├── LICENSE                       # MIT License
+├── Procfile                      # Railway/Heroku process file
+├── manage.py                     # Django management script
+├── requirements.txt              # Python dependencies
+└── README.md                     # This file
 ```
 
 ---
 
-## ⚙️ How It Works
-
-```mermaid
-flowchart TD
-    A[User visits /register/] --> B[Fills registration form]
-    B --> C[Account created in DB]
-    C --> D[Redirected to /login/]
-    D --> E[Enters email & password]
-    E --> F{Credentials valid?}
-    F -- No --> G[Error message shown]
-    G --> D
-    F -- Yes --> H{User locked out?}
-    H -- Yes --> I[Locked out for 2 min]
-    I --> D
-    H -- No --> J[Generate TOTP secret]
-    J --> K[Send OTP via email]
-    K --> L[Redirect to /verify-otp/]
-    L --> M[User enters OTP]
-    M --> N{OTP valid & within 30s?}
-    N -- Yes --> O[✅ Login successful → /home/]
-    N -- No --> P[🔒 Lock user for 2 minutes]
-    P --> D
-
-    style O fill:#00d18f,stroke:#00a070,color:#000
-    style P fill:#ff4444,stroke:#cc0000,color:#fff
-    style I fill:#ff8800,stroke:#cc6600,color:#fff
-```
-
----
-
-## 🛡️ Security Measures
+## 🛡️ Security
 
 | Measure | Implementation |
 |---|---|
-| **Time-Based OTP** | Uses `pyotp` TOTP with a 30-second interval |
-| **Brute-Force Lockout** | 2-minute lockout after incorrect OTP attempt |
-| **CSRF Protection** | Django's built-in CSRF middleware on all forms |
-| **Password Hashing** | Django's default PBKDF2 password hasher |
-| **Session Management** | Server-side session for login state tracking |
-| **Secure Email** | TLS-encrypted SMTP connection (port 587) |
-| **Environment Secrets** | Email credentials stored in environment variables |
+| **TOTP Standard** | Uses `pyotp` with RFC 6238 TOTP, 30-second intervals |
+| **Brute-Force Protection** | Max 5 verification attempts per session |
+| **Rate Limiting** | Max 5 OTP requests per email per 5 minutes |
+| **Session Expiry** | OTP sessions expire after 2 minutes |
+| **CORS Enabled** | API accessible from any origin (by design) |
+| **CSRF Exempt** | API endpoints are CSRF-exempt (JSON-based, no cookies) |
+| **TLS Email** | SMTP connection uses TLS encryption (port 587) |
+| **Secure Tokens** | Cryptographically secure session tokens (`secrets.token_urlsafe`) |
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how you can help:
+Contributions are welcome! Here's how:
 
 1. **Fork** the repository
 2. **Create** a feature branch
@@ -356,7 +375,7 @@ Contributions are welcome! Here's how you can help:
 5. **Open** a Pull Request
 
 > [!NOTE]
-> Please make sure your code follows the existing style and includes appropriate documentation.
+> Please follow the existing code style and include appropriate documentation.
 
 ---
 
