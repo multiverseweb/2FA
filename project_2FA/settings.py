@@ -19,7 +19,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-j^q!6a7(iuu=-fry#71)r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1 localhost").split()
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1 localhost", "https://twofa-mo14.onrender.com, https://tejasgupta.work, https://multiverseweb.github.io").split()
 
 CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://127.0.0.1:8000").split()
 

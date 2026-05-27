@@ -37,7 +37,7 @@ That's it. When visitors open the page, they'll see a verification overlay askin
 - [API Reference](#-api-reference)
 - [Self-Hosting](#-self-hosting)
   - [Local Development](#local-development)
-  - [Deploy to Railway](#deploy-to-railway)
+  - [Deploy to Render](#deploy-to-render)
   - [Deploy with Docker](#deploy-with-docker)
 - [Architecture](#-architecture)
 - [Project Structure](#-project-structure)
@@ -94,7 +94,7 @@ sequenceDiagram
 | ♻️ **Session Persistence** | Verified users aren't asked again within the same browser session |
 | 📧 **Gmail SMTP** | Reliable email delivery via Gmail App Passwords |
 | 🐳 **Docker Ready** | Dockerfile included for containerized deployment |
-| 🚂 **Railway Ready** | Pre-configured Procfile for one-click Railway deployment |
+| 🚀 **Render Ready** | Easy deployment to Render with standard environment variables |
 
 ---
 
@@ -240,23 +240,27 @@ Open **[http://127.0.0.1:8000/](http://127.0.0.1:8000/)** to see the landing pag
 > [!IMPORTANT]
 > You must use a **Gmail App Password**, not your regular Gmail password. Generate one at [Google App Passwords](https://myaccount.google.com/apppasswords).
 
-### Deploy to Railway
+### Deploy to Render
 
-1. **Fork** this repository
-2. Go to [railway.app](https://railway.app/) and create a new project
-3. Select **"Deploy from GitHub repo"** and connect your fork
-4. Add the following **environment variables**:
+1. Go to [render.com](https://render.com/) and log in
+2. Click **"New +"** → **"Web Service"**
+3. Connect your GitHub repository
+4. Configure the service:
+   - **Runtime**: Python
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn project_2FA.wsgi --bind 0.0.0.0:$PORT`
+5. Add the following **Environment Variables**:
 
    | Variable | Value |
    |---|---|
    | `EMAIL_USER` | Your Gmail address |
    | `EMAIL_PASS` | Your Gmail App Password |
-   | `DJANGO_ALLOWED_HOSTS` | `.up.railway.app` |
-   | `CSRF_TRUSTED_ORIGINS` | `https://*.up.railway.app` |
+   | `DJANGO_ALLOWED_HOSTS` | `.onrender.com` |
+   | `CSRF_TRUSTED_ORIGINS` | `https://*.onrender.com` |
    | `SECRET_KEY` | A strong random secret key |
    | `DEBUG` | `False` |
 
-5. Railway will automatically detect the `Procfile` and deploy
+6. Click **Deploy**
 
 > [!TIP]
 > Generate a secure `SECRET_KEY`:
